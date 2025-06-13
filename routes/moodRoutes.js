@@ -4,6 +4,11 @@ import { protect } from '../middleware/authMiddleware.js';
 
 const router = express.Router();
 
+// ✅ Public test route
+router.get('/test', (req, res) => {
+  res.send('✅ Mood route test is working!');
+});
+
 // Get moods for logged-in user
 router.get('/', protect, async (req, res) => {
   const moods = await Mood.find({ user: req.user._id }).sort({ createdAt: -1 });
