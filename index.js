@@ -18,7 +18,11 @@ connectDB();
 
 // CORS Middleware (dynamic for local + deployed)
 app.use(cors({
-  origin: process.env.FRONTEND_URL || 'http://localhost:3000',
+  origin: [
+    'http://localhost:3000',
+    'https://mindmate-emo.netlify.app'
+ // <- Add this
+  ],
   credentials: true,
 }));
 
