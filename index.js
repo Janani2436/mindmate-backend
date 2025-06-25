@@ -16,25 +16,31 @@ const PORT = process.env.PORT || 5000;
 // Connect to MongoDB
 connectDB();
 
-// CORS Middleware (dynamic for local + deployed)
+// ✅ Enable CORS for Netlify and localhost
 app.use(cors({
   origin: [
     'http://localhost:3000',
     'https://mindmate-emo.netlify.app'
- // <- Add this
   ],
-  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
+  credentials: true
 }));
 
-// Parse JSON
+// ✅ Body parser for JSON
 app.use(express.json());
 
-// Routes
+// ✅ Routes
 app.use('/api/mood', moodRoutes);
-app.use('/api/auth', authRoutes);
+app.use('/api/auth', authRoutes); // includes /register and /login
 app.use('/api/chat', chatRoutes);
 
-// Global Error Handler
+// ✅ Optional: Root health route
+app.get('/', (req, res) => {
+  res.send('MindMate backend is running');
+});
+
+// ✅ Global error handler
 app.use((err, req, res, next) => {
   console.error('❗ Server Error:', err.stack);
   res.status(err.status || 500).json({
@@ -43,7 +49,7 @@ app.use((err, req, res, next) => {
   });
 });
 
-// Start Server
+// ✅ Start server
 app.listen(PORT, () => {
   console.log(`🚀 Server running on port ${PORT}`);
 });
