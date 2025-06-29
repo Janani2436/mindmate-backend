@@ -6,9 +6,6 @@ import ChatMessage from '../models/ChatMessage.js';
 const validLanguages = ['en', 'ta', 'hi', 'es', 'fr', 'de', 'te', 'zh', 'ar'];
 
 const chat = async (req, res) => {
-  console.log("📩 Incoming request body:", req.body);
-  console.log("👤 Authenticated user:", req.user);
-
   const { message, language = 'en' } = req.body;
 
   if (!message?.trim()) {
@@ -18,19 +15,16 @@ const chat = async (req, res) => {
   try {
     const targetLang = validLanguages.includes(language) ? language : 'en';
 
-    // 🔁 Translate incoming message to English if needed
     let userMessageEnglish = message;
     if (targetLang !== 'en') {
       try {
         userMessageEnglish = await translateText(message, targetLang, 'en');
       } catch (err) {
-        console.warn("⚠️ Translation to English failed:", err.message);
+        console.warn("⚠️ Translation failed:", err.message);
       }
     }
 
-    // 🧠 Emotion detection
     const emotion = detectEmotion(userMessageEnglish);
-    console.log("🔍 Emotion detected:", emotion);
 
     const emotionPromptMap = {
       sad: "Respond with extra empathy and care.",
@@ -41,74 +35,60 @@ const chat = async (req, res) => {
       default: "Respond kindly and helpfully.",
     };
 
-    const promptPrefix = emotionPromptMap[emotion] || emotionPromptMap.default;
+    const systemPrompt = `You are a kind and empathetic mental health support assistant. ${emotionPromptMap[emotion] || emotionPromptMap.default}`;
 
-    const systemPrompt = `You are a kind and empathetic mental health support assistant. ${promptPrefix}`;
-
-    console.log("🔑 Using model:", process.env.OPENROUTER_MODEL);
-    console.log("🔐 API Key present:", Boolean(process.env.OPENROUTER_API_KEY));
-
-    // 🧠 Call OpenRouter API
     const openRouterRes = await axios.post(
-      'https://openrouter.ai/api/v1/chat/completions',
+      "https://openrouter.ai/api/v1/chat/completions",
       {
-        model: process.env.OPENROUTER_MODEL || 'gryphe/mythomist-7b',
+        model: process.env.OPENROUTER_MODEL || "gryphe/mythomist-7b",
         messages: [
-          { role: 'system', content: systemPrompt },
-          { role: 'user', content: userMessageEnglish },
+          { role: "system", content: systemPrompt },
+          { role: "user", content: userMessageEnglish },
         ],
       },
       {
         headers: {
           Authorization: `Bearer ${process.env.OPENROUTER_API_KEY}`,
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
       }
     );
 
     const aiEnglishReply = openRouterRes.data?.choices?.[0]?.message?.content?.trim();
-
     if (!aiEnglishReply) {
-      console.error("❌ Empty or invalid AI response:", JSON.stringify(openRouterRes.data, null, 2));
       return res.status(500).json({ message: "Invalid response from AI" });
     }
 
-    // 🔁 Translate response back to user’s language
     let finalReply = aiEnglishReply;
     if (targetLang !== 'en') {
       try {
         finalReply = await translateText(aiEnglishReply, 'en', targetLang);
       } catch (err) {
-        console.warn("⚠️ Translation to user language failed:", err.message);
+        console.warn("⚠️ Reverse translation failed:", err.message);
       }
     }
 
-    // 💾 Save chat to MongoDB
-    if (!req.user?._id) {
-      console.warn("⚠️ Missing user ID in request.");
+    if (req.user?._id) {
+      await new ChatMessage({
+        user: req.user._id,
+        messages: [
+          { role: "user", content: message, emotion },
+          { role: "bot", content: finalReply, emotion },
+        ],
+      }).save();
     }
-
-    await new ChatMessage({
-      user: req.user._id,
-      messages: [
-        { role: "user", content: message, emotion },
-        { role: "bot", content: finalReply, emotion },
-      ],
-    }).save();
 
     res.json({ reply: finalReply, emotion });
 
   } catch (error) {
-    console.error("🔴 Chat processing error:", {
+    console.error("🔴 Chat Error:", {
       message: error.message,
       responseData: error.response?.data,
-      fullError: error.toString(),
     });
 
-    const isDev = process.env.NODE_ENV !== 'production';
     res.status(500).json({
       message: "Something went wrong during chat processing",
-      ...(isDev && { error: error.message }),
+      ...(process.env.NODE_ENV !== 'production' && { error: error.message }),
     });
   }
 };
@@ -118,7 +98,7 @@ const getChatHistory = async (req, res) => {
     const chatHistory = await ChatMessage.find({ user: req.user._id }).sort({ createdAt: -1 });
     res.json(chatHistory);
   } catch (error) {
-    console.error("❌ Failed to retrieve chat history:", error.message);
+    console.error("❌ Chat history error:", error.message);
     res.status(500).json({ message: "Failed to fetch chat history" });
   }
 };
