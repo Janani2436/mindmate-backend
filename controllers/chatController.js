@@ -46,8 +46,9 @@ const chat = async (req, res) => {
     const model = process.env.OPENROUTER_MODEL || "mistralai/mistral-small-3.2-24b-instruct:free";
     const apiKey = process.env.OPENROUTER_API_KEY;
 
-    console.log("🔧 Using model:", model);
-    console.log("🔑 API key present?", !!apiKey);
+    console.log("🔑 OPENROUTER_API_KEY present?", !!process.env.OPENROUTER_API_KEY);
+    console.log("🔧 Model:", process.env.OPENROUTER_MODEL);
+
 
     const response = await axios.post(
       "https://openrouter.ai/api/v1/chat/completions",
