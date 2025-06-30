@@ -9,8 +9,11 @@
     "dev": "nodemon index.js"
   },
   "keywords": [],
-  "author": "",
-  "license": "ISC",
+  "author": "Janani A",
+  "license": "MIT",
+  "engines": {
+    "node": ">=18.x"
+  },
   "dependencies": {
     "@vonage/server-sdk": "^3.21.0",
     "axios": "^1.9.0",
@@ -24,5 +27,8 @@
     "node-telegram-bot-api": "^0.66.0",
     "openai": "^4.93.0",
     "twilio": "^5.5.2"
+  },
+  "devDependencies": {
+    "nodemon": "^3.0.1"
   }
 }
