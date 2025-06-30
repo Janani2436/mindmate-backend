@@ -3,87 +3,119 @@ import { detectEmotion } from '../utils/emotionDetector.js';
 import { translateText } from '../utils/translate.js';
 import ChatMessage from '../models/ChatMessage.js';
 
-const validLanguages = ['en','ta','hi','es','fr','de','te','zh','ar'];
+// Supported languages
+const validLanguages = ['en', 'ta', 'hi', 'es', 'fr', 'de', 'te', 'zh', 'ar'];
 
 const chat = async (req, res) => {
-  console.log("📩 Req.body:", req.body);
-  console.log("👤 User:", req.user?.id);
+  console.log("📩 Incoming message:", req.body?.message);
+  console.log("🌐 Language:", req.body?.language);
+  console.log("👤 Authenticated user:", req.user?._id);
 
   const { message, language = 'en' } = req.body;
-  if (!message?.trim()) return res.status(400).json({ message: 'Message is required' });
+
+  if (!message?.trim()) {
+    return res.status(400).json({ message: 'Message is required' });
+  }
 
   try {
     const targetLang = validLanguages.includes(language) ? language : 'en';
-    let english = message;
+
+    // Step 1: Translate user message to English if needed
+    let englishMessage = message;
     if (targetLang !== 'en') {
-      try { english = await translateText(message, targetLang, 'en'); }
-      catch(err) { console.warn('⚠️ Translate->en failed:', err.message); }
+      try {
+        englishMessage = await translateText(message, targetLang, 'en');
+      } catch (err) {
+        console.warn("⚠️ Translation to English failed:", err.message);
+      }
     }
 
-    const emotion = detectEmotion(english);
-    const prompts = {
+    // Step 2: Detect emotion
+    const emotion = detectEmotion(englishMessage);
+    const emotionPromptMap = {
       sad: "Respond with extra empathy and care.",
-      angry: "Try to calm the user.",
-      anxious: "Be supportive and calming.",
-      happy: "Celebrate joy.",
-      lonely: "Offer companionship.",
-      default: "Respond kindly."
+      angry: "Try to calm the user and acknowledge their frustration.",
+      anxious: "Be supportive and offer calming advice.",
+      happy: "Celebrate their joy and encourage them.",
+      lonely: "Show understanding and offer comforting thoughts.",
+      default: "Respond kindly and helpfully.",
     };
-    const systemPrompt = `You are kind and supportive. ${prompts[emotion] || prompts.default}`;
+    const systemPrompt = `You are a kind and empathetic mental health support assistant. ${emotionPromptMap[emotion] || emotionPromptMap.default}`;
 
-    const model = process.env.OPENROUTER_MODEL;
-    const key = process.env.OPENROUTER_API_KEY;
+    // Step 3: Prepare OpenRouter request
+    const model = process.env.OPENROUTER_MODEL || "mistralai/mistral-small-3.2-24b-instruct:free";
+    const apiKey = process.env.OPENROUTER_API_KEY;
 
-    console.log("🔑 Model:", model);
-    console.log("🔑 API Key present?", !!key);
+    console.log("🔧 Using model:", model);
+    console.log("🔑 API key present?", !!apiKey);
 
-    const oRes = await axios.post(
+    const response = await axios.post(
       "https://openrouter.ai/api/v1/chat/completions",
-      { model, messages: [
-        { role: "system", content: systemPrompt },
-        { role: "user", content: english }
-      ]},
-      { headers: { Authorization: `Bearer ${key}`, "Content-Type": "application/json" } }
+      {
+        model,
+        messages: [
+          { role: "system", content: systemPrompt },
+          { role: "user", content: englishMessage },
+        ],
+      },
+      {
+        headers: {
+          Authorization: `Bearer ${apiKey}`,
+          "Content-Type": "application/json",
+        },
+      }
     );
 
-    const aiReply = oRes.data?.choices?.[0]?.message?.content?.trim();
-    if (!aiReply) return res.status(500).json({ message: "Empty AI reply" });
-
-    let final = aiReply;
-    if (targetLang !== 'en') {
-      try { final = await translateText(aiReply, 'en', targetLang); }
-      catch(err) { console.warn('⚠️ Translate->user failed:', err.message); }
+    const aiEnglishReply = response.data?.choices?.[0]?.message?.content?.trim();
+    if (!aiEnglishReply) {
+      return res.status(500).json({ message: "AI did not return a valid response." });
     }
 
-    await new ChatMessage({ user: req.user._id, messages: [
-      { role: 'user', content: message, emotion },
-      { role: 'bot', content: final, emotion }
-    ]}).save();
+    // Step 4: Translate reply back if needed
+    let finalReply = aiEnglishReply;
+    if (targetLang !== 'en') {
+      try {
+        finalReply = await translateText(aiEnglishReply, 'en', targetLang);
+      } catch (err) {
+        console.warn("⚠️ Failed to translate reply:", err.message);
+      }
+    }
 
-    res.json({ reply: final, emotion });
+    // Step 5: Save to DB if user is authenticated
+    if (req.user?._id) {
+      await new ChatMessage({
+        user: req.user._id,
+        messages: [
+          { role: 'user', content: message, emotion },
+          { role: 'bot', content: finalReply, emotion },
+        ],
+      }).save();
+    }
 
-  } catch(error) {
-    console.error('🔴 Chat Error full:', {
-      msg: error.message,
-      data: error.response?.data,
+    // Step 6: Send response
+    res.json({ reply: finalReply, emotion });
+
+  } catch (error) {
+    console.error("🔴 Chat processing error:", {
+      message: error.message,
       stack: error.stack,
-      model: process.env.OPENROUTER_MODEL,
-      apiKey: !!process.env.OPENROUTER_API_KEY
+      response: error.response?.data,
     });
+
     res.status(500).json({
       message: "Error during chat.",
-      details: error.response?.data || error.message
+      details: error.response?.data || error.message,
     });
   }
 };
 
 const getChatHistory = async (req, res) => {
   try {
-    const history = await ChatMessage.find({ user: req.user._id }).sort({ createdAt: -1 });
-    res.json(history);
-  } catch(error) {
-    console.error("❌ History fetch error:", error);
-    res.status(500).json({ message: "Fetch history failed" });
+    const chatHistory = await ChatMessage.find({ user: req.user._id }).sort({ createdAt: -1 });
+    res.json(chatHistory);
+  } catch (error) {
+    console.error("❌ Chat history fetch error:", error.message);
+    res.status(500).json({ message: "Failed to fetch chat history" });
   }
 };
 
