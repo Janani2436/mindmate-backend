@@ -43,7 +43,7 @@ const chat = async (req, res) => {
     const systemPrompt = `You are a kind and empathetic mental health support assistant. ${emotionPromptMap[emotion] || emotionPromptMap.default}`;
 
     // Step 3: Prepare OpenRouter request
-    const model = process.env.OPENROUTER_MODEL || "mistralai/mistral-small-3.2-24b-instruct:free";
+    const model = process.env.OPENROUTER_MODEL || "meta-llama/llama-3-8b-instruct";
     const apiKey = process.env.OPENROUTER_API_KEY;
 
     console.log("🔑 OPENROUTER_API_KEY present?", !!process.env.OPENROUTER_API_KEY);
