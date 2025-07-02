@@ -5,18 +5,21 @@ import express from 'express';
 import mongoose from 'mongoose';
 import cors from 'cors';
 
+import connectDB from './config/db.js';
 import moodRoutes from './routes/moodRoutes.js';
 import authRoutes from './routes/authRoutes.js';
 import chatRoutes from './routes/chatRoutes.js';
-import connectDB from './config/db.js';
 
 const app = express();
 const PORT = process.env.PORT || 5000;
 
-// Connect to MongoDB
+// ✅ Connect to MongoDB
 connectDB();
 
-// ✅ Enable CORS for Netlify and localhost
+// ✅ Middleware
+app.use(express.json());
+
+// ✅ CORS setup (Netlify + Localhost support)
 app.use(cors({
   origin: [
     'http://localhost:3000',
@@ -24,20 +27,21 @@ app.use(cors({
   ],
   methods: ['GET', 'POST', 'PUT', 'DELETE'],
   allowedHeaders: ['Content-Type', 'Authorization'],
-  credentials: true
 }));
 
-// ✅ Body parser for JSON
-app.use(express.json());
-
-// ✅ Routes
+// ✅ API Routes
 app.use('/api/mood', moodRoutes);
-app.use('/api/auth', authRoutes); // includes /register and /login
-app.use('/api/chat', chatRoutes);
+app.use('/api/auth', authRoutes);  // register, login
+app.use('/api/chat', chatRoutes);  // chat, history (protected)
 
-// ✅ Optional: Root health route
+// ✅ Health check route
 app.get('/', (req, res) => {
-  res.send('MindMate backend is running');
+  res.send('✅ MindMate backend is running!');
+});
+
+// ✅ 404 Route (catch-all)
+app.use('*', (req, res) => {
+  res.status(404).json({ message: '❌ Route not found' });
 });
 
 // ✅ Global error handler
