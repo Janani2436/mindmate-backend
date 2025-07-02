@@ -1,3 +1,6 @@
+import dotenv from 'dotenv';
+dotenv.config(); // <-- REQUIRED to load .env variables
+
 import axios from 'axios';
 import { detectEmotion } from '../utils/emotionDetector.js';
 import { translateText } from '../utils/translate.js';
