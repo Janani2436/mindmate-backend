@@ -89,6 +89,7 @@ const chat = async (req, res) => {
     if (req.user?._id) {
       await new ChatMessage({
         user: req.user._id,
+        sessionType: 'text',
         messages: [
           { role: 'user', content: message, emotion },
           { role: 'bot', content: finalReply, emotion },
