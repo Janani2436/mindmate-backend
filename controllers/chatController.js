@@ -1,72 +1,69 @@
+// server/controllers/chatController.js
 import dotenv from 'dotenv';
-dotenv.config(); // <-- REQUIRED to load .env variables
+dotenv.config();
 
 import axios from 'axios';
 import { detectEmotion } from '../utils/emotionDetector.js';
 import { translateText } from '../utils/translate.js';
 import ChatMessage from '../models/ChatMessage.js';
 
-// Supported languages
+// Supported ISO language codes
 const validLanguages = ['en', 'ta', 'hi', 'es', 'fr', 'de', 'te', 'zh', 'ar'];
 
 const chat = async (req, res) => {
-  console.log("📩 Incoming message:", req.body?.message);
-  console.log("🌐 Language:", req.body?.language);
-  console.log("👤 Authenticated user:", req.user?._id);
-
   const { message, language = 'en' } = req.body;
+
+  console.log("📩 Incoming message:", message);
+  console.log("🌐 Language:", language);
+  console.log("👤 User:", req.user?._id);
 
   if (!message?.trim()) {
     return res.status(400).json({ message: 'Message is required' });
   }
 
   try {
+    // Step 1: Validate or fallback language
     const targetLang = validLanguages.includes(language) ? language : 'en';
 
-    // Step 1: Translate user message to English if needed
+    // Step 2: Translate user message to English (AI-friendly format)
     let englishMessage = message;
     if (targetLang !== 'en') {
       try {
         englishMessage = await translateText(message, targetLang, 'en');
       } catch (err) {
-        console.warn("⚠️ Translation to English failed:", err.message);
+        console.warn("⚠️ Translation to English failed. Using original message:", err.message);
       }
     }
 
-    // Step 2: Detect emotion
+    // Step 3: Detect emotion to create custom response tone
     const emotion = detectEmotion(englishMessage);
     const emotionPromptMap = {
-      sad: "Respond with extra empathy and care.",
-      angry: "Try to calm the user and acknowledge their frustration.",
-      anxious: "Be supportive and offer calming advice.",
-      happy: "Celebrate their joy and encourage them.",
-      lonely: "Show understanding and offer comforting thoughts.",
-      default: "Respond kindly and helpfully.",
+      sad: "Respond with empathy and reassurance.",
+      happy: "Celebrate their joy and encourage positivity.",
+      anxious: "Speak calmly and acknowledge anxiety.",
+      angry: "Stay composed and offer support.",
+      lonely: "Offer company and caring words.",
+      default: "Be kind and supportive as a mental health assistant."
     };
-    const systemPrompt = `You are a kind and empathetic mental health support assistant. ${emotionPromptMap[emotion] || emotionPromptMap.default}`;
 
-    // Step 3: Prepare OpenRouter request
-    const model = process.env.OPENROUTER_MODEL || "mistralai/mistral-7b-instruct:free";
-    const apiKey = process.env.OPENROUTER_API_KEY;
+    const emotionPrompt = emotionPromptMap[emotion] || emotionPromptMap.default;
+    const systemPrompt = `You are an empathetic AI therapist. ${emotionPrompt}`;
 
-    console.log("🔑 OPENROUTER_API_KEY present?", !!process.env.OPENROUTER_API_KEY);
-    console.log("🔧 Model:", process.env.OPENROUTER_MODEL);
-
-
+    // Step 4: Ask the AI (via OpenRouter)
     const response = await axios.post(
       "https://openrouter.ai/api/v1/chat/completions",
       {
-        model,
+        model: process.env.OPENROUTER_MODEL || "mistralai/mistral-7b-instruct:free",
         messages: [
-          { role: "system", content: systemPrompt },
-          { role: "user", content: englishMessage },
-        ],
+          { role: 'system', content: systemPrompt },
+          { role: 'user', content: englishMessage },
+        ]
       },
       {
         headers: {
-          Authorization: `Bearer ${apiKey}`,
+          Authorization: `Bearer ${process.env.OPENROUTER_API_KEY}`,
           "Content-Type": "application/json",
-        },
+        }
       }
     );
 
@@ -75,7 +72,7 @@ const chat = async (req, res) => {
       return res.status(500).json({ message: "AI did not return a valid response." });
     }
 
-    // Step 4: Translate reply back if needed
+    // Step 5: Translate AI reply to user's language
     let finalReply = aiEnglishReply;
     if (targetLang !== 'en') {
       try {
@@ -85,32 +82,24 @@ const chat = async (req, res) => {
       }
     }
 
-    // Step 5: Save to DB if user is authenticated
+    // Step 6: Save to DB if authenticated
     if (req.user?._id) {
       await new ChatMessage({
         user: req.user._id,
         sessionType: 'text',
         messages: [
           { role: 'user', content: message, emotion },
-          { role: 'bot', content: finalReply, emotion },
+          { role: 'bot', content: finalReply, emotion }
         ],
       }).save();
     }
 
-    // Step 6: Send response
+    // Step 7: Respond to frontend
     res.json({ reply: finalReply, emotion });
 
   } catch (error) {
-    console.error("🔴 Chat processing error:", {
-      message: error.message,
-      stack: error.stack,
-      response: error.response?.data,
-    });
-
-    res.status(500).json({
-      message: "Error during chat.",
-      details: error.response?.data || error.message,
-    });
+    console.error("🔴 Chat error:", error.response?.data || error.message);
+    res.status(500).json({ message: "Error during chat", details: error.message || 'Unknown error' });
   }
 };
 
