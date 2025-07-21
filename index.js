@@ -1,3 +1,4 @@
+// index.js
 import dotenv from 'dotenv';
 dotenv.config();
 
@@ -11,6 +12,7 @@ import authRoutes from './routes/authRoutes.js';
 import chatRoutes from './routes/chatRoutes.js';
 import videoChatRoutes from './routes/videoChatRoutes.js';
 import emotionRoutes from './routes/emotionRoutes.js';
+import aiRoutes from './routes/aiRoutes.js';
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -18,32 +20,35 @@ const PORT = process.env.PORT || 5000;
 // Connect to MongoDB
 connectDB();
 
-// Middleware
+// Middleware setup
 app.use(express.json());
-app.use(cors({
-  origin: [
-    'http://localhost:3000',
-    'http://localhost:3001',
-    'https://mindmate-emo.netlify.app',
-  ],
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization'],
-  credentials: true,
-}));
+app.use(
+  cors({
+    origin: [
+      'http://localhost:3000',
+      'http://localhost:3001',
+      'https://mindmate-emo.netlify.app',
+    ],
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization'],
+    credentials: true,
+  })
+);
 
 // API Routes
+app.use('/api/ai', aiRoutes);
 app.use('/api/mood', moodRoutes);
 app.use('/api/auth', authRoutes);
-app.use('/api/chat', chatRoutes);         // ✅ now points to POST /api/chat
+app.use('/api/chat', chatRoutes);
 app.use('/api/videochat', videoChatRoutes);
 app.use('/api/emotion', emotionRoutes);
 
-// Health check
+// Health check route
 app.get('/', (req, res) => {
   res.send('✅ MindMate backend is running!');
 });
 
-// 404 route
+// 404 fallback (keep after all routes)
 app.use('*', (req, res) => {
   res.status(404).json({ message: '❌ Route not found' });
 });

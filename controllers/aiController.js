@@ -2,6 +2,8 @@
 import dotenv from 'dotenv';
 dotenv.config();
 
+import axios from 'axios';
+
 export const handleVideoChat = async (req, res) => {
   const { prompt } = req.body;
 
@@ -10,30 +12,31 @@ export const handleVideoChat = async (req, res) => {
   }
 
   try {
-    const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        "Authorization": `Bearer ${process.env.OPENROUTER_API_KEY}`,
-        "Content-Type": "application/json"
+    const response = await axios.post(
+      'https://openrouter.ai/api/v1/chat/completions',
+      {
+        model: 'mistralai/mistral-7b-instruct:free',
+        messages: [{ role: 'user', content: prompt }],
       },
-      body: JSON.stringify({
-        model: "mistralai/mistral-7b-instruct:free",
-        messages: [{ role: "user", content: prompt }]
-      }),
-    });
+      {
+        headers: {
+          Authorization: `Bearer ${process.env.OPENROUTER_API_KEY}`,
+          'Content-Type': 'application/json',
+        },
+        timeout: 20000,
+      }
+    );
 
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error('❌ OpenRouter error:', errorText);
-      return res.status(500).json({ error: 'OpenRouter failed to respond properly.' });
-    }
-
-    const data = await response.json();
-    const aiMessage = data.choices?.[0]?.message?.content || '🤖 No AI response.';
+    const aiMessage =
+      response.data?.choices?.[0]?.message?.content?.trim() ||
+      '🤖 No AI response.';
     res.json({ response: aiMessage });
-
   } catch (err) {
-    console.error('❌ OpenRouter API error:', err.message);
+    if (err.response) {
+      console.error('❌ OpenRouter API Error:', err.response.status, err.response.data);
+    } else {
+      console.error('❌ OpenRouter API Error:', err.message);
+    }
     res.status(500).json({ error: 'AI response failed' });
   }
 };
