@@ -1,76 +1,84 @@
 import axios from 'axios';
 
-// Stable LibreTranslate instance
+// Stable LibreTranslate cloud instance
 const LIBRE_TRANSLATE_URL = 'https://translate.argosopentech.com';
 
 /**
- * Translate text from one language to another
- * 
- * @param {string} text - Text to translate
- * @param {string} sourceLang - Source language code (e.g. 'hi')
- * @param {string} targetLang - Target language code (e.g. 'en')
- * @returns {string} Translated text or original on failure
+ * Translate text from one language to another using LibreTranslate API
+ * @param {string} text - Text to translate (e.g. 'Hello')
+ * @param {string} sourceLang - ISO 639-1 code of source language (e.g. 'hi')
+ * @param {string} targetLang - ISO 639-1 code of target language (e.g. 'en')
+ * @returns {Promise<string>} Translated text or original on error
  */
 export const translateText = async (text, sourceLang, targetLang) => {
-  if (!text || typeof text !== 'string' || text.trim() === '') {
-    throw new Error('❌ Text to translate must be a non-empty string.');
-  }
-
-  if (!sourceLang || !targetLang) {
-    throw new Error('❌ Source and target language codes are required.');
-  }
-
   try {
-    const response = await axios.post(`${LIBRE_TRANSLATE_URL}/translate`, {
-      q: text,
-      source: sourceLang,
-      target: targetLang,
-      format: 'text'
-    }, {
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      timeout: 10000
-    });
+    // Validate inputs
+    if (typeof text !== 'string' || !text.trim()) {
+      throw new Error('Text to translate must be a non-empty string.');
+    }
 
-    const translated = response.data?.translatedText;
+    if (!sourceLang || !targetLang) {
+      throw new Error('Both source and target language codes are required.');
+    }
+
+    const res = await axios.post(
+      `${LIBRE_TRANSLATE_URL}/translate`,
+      {
+        q: text,
+        source: sourceLang,
+        target: targetLang,
+        format: 'text',
+      },
+      {
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        timeout: 12000,
+      }
+    );
+
+    const translated = res?.data?.translatedText;
+
     if (!translated) {
-      console.error('❌ LibreTranslate failed to return translatedText:', response.data);
-      throw new Error('Unexpected response structure from LibreTranslate.');
+      throw new Error(`LibreTranslate returned no result: ${JSON.stringify(res.data)}`);
     }
 
     return translated.trim();
-  } catch (error) {
-    console.error('🔴 Translation Error:', error.message || error);
-    return text; // Fallback: return original text
+  } catch (err) {
+    console.error('🔴 [TranslateText Error]:', err.message || err);
+    // Graceful fallback: return original text
+    return text;
   }
 };
 
 /**
- * Detect language of a given text
- * 
- * @param {string} text - Text to detect language from
- * @returns {string} Detected language (or 'en' as fallback)
+ * Detect language of a given input string using LibreTranslate
+ * @param {string} text - String to analyze (e.g., 'Hola mundo')
+ * @returns {Promise<string>} Detected ISO 639-1 code (default: 'en')
  */
 export const detectLanguage = async (text) => {
-  if (!text || typeof text !== 'string' || text.trim() === '') return 'en';
-
   try {
-    const response = await axios.post(`${LIBRE_TRANSLATE_URL}/detect`, {
-      q: text
-    }, {
-      headers: {
-        'Content-Type': 'application/json'
-      }
-    });
+    if (typeof text !== 'string' || !text.trim()) return 'en';
 
-    if (Array.isArray(response.data) && response.data.length > 0) {
-      return response.data[0]?.language || 'en';
+    const res = await axios.post(
+      `${LIBRE_TRANSLATE_URL}/detect`,
+      { q: text },
+      {
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        timeout: 8000,
+      }
+    );
+
+    if (!Array.isArray(res.data) || res.data.length === 0) {
+      throw new Error('Empty response from detect API');
     }
 
-    throw new Error('Unexpected response from language detection.');
-  } catch (error) {
-    console.error('🔴 Language Detection Error:', error.message || error);
-    return 'en'; // Fallback to English
+    const detectedLang = res.data[0]?.language;
+    return detectedLang || 'en';
+  } catch (err) {
+    console.error('🔴 [LanguageDetection Error]:', err.message || err);
+    return 'en'; // Fallback ⛑
   }
 };

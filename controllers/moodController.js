@@ -20,7 +20,7 @@ export const getMoods = async (req, res) => {
   if (!user) return res.status(401).json({ message: 'Not authenticated.' });
 
   try {
-    const moods = await Mood.find({ user }).sort({ createdAt: 1 });
+    const moods = await Mood.find({ user }).sort({ createdAt: -1 });
     res.json(moods);
   } catch (err) {
     res.status(500).json({ message: 'Failed to fetch moods.', error: err.message });
@@ -30,7 +30,6 @@ export const getMoods = async (req, res) => {
 export const deleteMood = async (req, res) => {
   const user = req.user?._id;
   const moodId = req.params.id;
-
   try {
     const mood = await Mood.findOneAndDelete({ _id: moodId, user });
     if (!mood) return res.status(404).json({ message: 'Mood not found.' });
@@ -39,14 +38,15 @@ export const deleteMood = async (req, res) => {
     res.status(500).json({ message: 'Failed to delete mood.', error: err.message });
   }
 };
-// Endpoint to calculate max/active streak
+
 export const getMoodStreak = async (req, res) => {
   const user = req.user?._id;
   if (!user) return res.status(401).json({ message: 'Not authenticated.' });
   const moods = await Mood.find({ user }).sort({ createdAt: 1 });
   if (!moods.length) return res.json({ streak: 0, maxStreak: 0 });
 
-  let streak = 1, maxStreak = 1;
+  let streak = 1,
+    maxStreak = 1;
   let prev = new Date(moods[0].createdAt);
 
   for (let i = 1; i < moods.length; ++i) {
