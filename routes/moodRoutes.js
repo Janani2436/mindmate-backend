@@ -1,7 +1,7 @@
 import express from 'express';
 import Mood from '../models/Mood.js';
 import { protect } from '../middleware/authMiddleware.js';
-
+import { getMoodStreak } from '../controllers/moodController.js';
 const router = express.Router();
 
 // ✅ Public test route
@@ -14,7 +14,7 @@ router.get('/', protect, async (req, res) => {
   const moods = await Mood.find({ user: req.user._id }).sort({ createdAt: -1 });
   res.json(moods);
 });
-
+router.get('/streak', protect, getMoodStreak);
 // Add mood
 router.post('/', protect, async (req, res) => {
   const { mood, note } = req.body;

@@ -1,8 +1,16 @@
-// server/utils/translate.js
 import axios from 'axios';
 
-const LIBRE_TRANSLATE_URL = 'https://libretranslate.de';
+// Stable LibreTranslate instance
+const LIBRE_TRANSLATE_URL = 'https://translate.argosopentech.com';
 
+/**
+ * Translate text from one language to another
+ * 
+ * @param {string} text - Text to translate
+ * @param {string} sourceLang - Source language code (e.g. 'hi')
+ * @param {string} targetLang - Target language code (e.g. 'en')
+ * @returns {string} Translated text or original on failure
+ */
 export const translateText = async (text, sourceLang, targetLang) => {
   if (!text || typeof text !== 'string' || text.trim() === '') {
     throw new Error('❌ Text to translate must be a non-empty string.');
@@ -19,21 +27,31 @@ export const translateText = async (text, sourceLang, targetLang) => {
       target: targetLang,
       format: 'text'
     }, {
-      headers: { 'Content-Type': 'application/json' }
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      timeout: 10000
     });
 
-    if (response.data?.translatedText) {
-      return response.data.translatedText;
+    const translated = response.data?.translatedText;
+    if (!translated) {
+      console.error('❌ LibreTranslate failed to return translatedText:', response.data);
+      throw new Error('Unexpected response structure from LibreTranslate.');
     }
 
-    throw new Error('Unexpected response structure from LibreTranslate.');
+    return translated.trim();
   } catch (error) {
     console.error('🔴 Translation Error:', error.message || error);
-    // Fallback: return original text if translation fails
-    return text;
+    return text; // Fallback: return original text
   }
 };
 
+/**
+ * Detect language of a given text
+ * 
+ * @param {string} text - Text to detect language from
+ * @returns {string} Detected language (or 'en' as fallback)
+ */
 export const detectLanguage = async (text) => {
   if (!text || typeof text !== 'string' || text.trim() === '') return 'en';
 
@@ -41,7 +59,9 @@ export const detectLanguage = async (text) => {
     const response = await axios.post(`${LIBRE_TRANSLATE_URL}/detect`, {
       q: text
     }, {
-      headers: { 'Content-Type': 'application/json' }
+      headers: {
+        'Content-Type': 'application/json'
+      }
     });
 
     if (Array.isArray(response.data) && response.data.length > 0) {
@@ -51,6 +71,6 @@ export const detectLanguage = async (text) => {
     throw new Error('Unexpected response from language detection.');
   } catch (error) {
     console.error('🔴 Language Detection Error:', error.message || error);
-    return 'en'; // fallback to English
+    return 'en'; // Fallback to English
   }
 };
