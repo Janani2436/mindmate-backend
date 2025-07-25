@@ -1,4 +1,4 @@
-// models/User.js
+// MindMate backend - User model
 import mongoose from 'mongoose';
 import bcrypt from 'bcryptjs';
 
@@ -11,7 +11,7 @@ const userSchema = new mongoose.Schema(
       trim: true,
       minlength: 3,
       maxlength: 30,
-      match: /^[a-zA-Z0-9_]+$/, // allow only safe usernames
+      match: /^[a-zA-Z0-9_]+$/, // alows valid usernames
     },
     password: {
       type: String,
@@ -27,7 +27,7 @@ const userSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
-// Hash password before save
+// generates tokens for user
 userSchema.pre('save', async function (next) {
   if (!this.isModified('password')) return next();
   try {
@@ -38,8 +38,7 @@ userSchema.pre('save', async function (next) {
     next(err);
   }
 });
-
-// Password comparison
+// compares password with tokens
 userSchema.methods.matchPassword = async function (enteredPassword) {
   return await bcrypt.compare(enteredPassword, this.password);
 };

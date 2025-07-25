@@ -1,3 +1,4 @@
+// MindMate backend - chatMessage.js
 import mongoose from 'mongoose';
 
 const chatMessageSchema = new mongoose.Schema(
@@ -9,7 +10,7 @@ const chatMessageSchema = new mongoose.Schema(
     },
     messages: [
       {
-        _id: false, // Prevent Mongoose auto-id for subdocument
+        _id: false, // auto-generated IDs are prevented
         role: {
           type: String,
           enum: ['user', 'bot'],
@@ -18,7 +19,7 @@ const chatMessageSchema = new mongoose.Schema(
         content: {
           type: String,
           required: true,
-          maxlength: 2000, // ✅ Prevent excessively long text
+          maxlength: 2000, // limits message lenghth
         },
         emotion: {
           type: String,
@@ -48,11 +49,11 @@ const chatMessageSchema = new mongoose.Schema(
     },
   },
   {
-    timestamps: true, // ✅ createdAt & updatedAt
+    timestamps: true,
   }
 );
 
-// 📦 Index for efficient user+session lookups
+
 chatMessageSchema.index({ user: 1, createdAt: -1 });
 chatMessageSchema.index({ user: 1, sessionType: 1 });
 chatMessageSchema.index({ 'messages.emotion': 1 });

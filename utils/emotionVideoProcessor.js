@@ -1,3 +1,4 @@
+// MindMate backend - emotionVideoProcessor.js
 import axios from 'axios';
 
 /**
@@ -12,7 +13,7 @@ export const processFrame = async (imageData) => {
   }
 
   try {
-    // Use environment variables if available, with sensible default endpoint for dev/demo
+    // environmental variales are used
     const emotionApiUrl = process.env.EMOTION_API_URL || 'https://api.emotionsense.pro/detect';
     const apiKey = process.env.EMOTIONSENSE_API_KEY;
 
@@ -49,7 +50,7 @@ export const processFrame = async (imageData) => {
       data: error.response?.data
     });
 
-    // Fallback to simulated detection
+    // returns to default emotion
     return simulateEmotionDetection(imageData);
   }
 };
@@ -62,7 +63,7 @@ export const processFrame = async (imageData) => {
  */
 const simulateEmotionDetection = (imageData) => {
   try {
-    // Simple deterministic hash for visual test/demo (not for production)
+    // emotion detection simulation
     const hash = simpleHash(imageData.substring(0, 100));
     const emotions = ['happy', 'sad', 'neutral', 'anxious', 'angry', 'excited'];
     const index = hash % emotions.length;
@@ -85,7 +86,7 @@ const simpleHash = (str) => {
   for (let i = 0; i < str.length; i++) {
     const char = str.charCodeAt(i);
     hash = ((hash << 5) - hash) + char;
-    hash = hash & hash; // Convert to 32-bit integer
+    hash = hash & hash; // converts hash to 32 bit integer 
   }
   return Math.abs(hash);
 };
@@ -97,10 +98,10 @@ const simpleHash = (str) => {
  */
 export const validateImageData = (imageData) => {
   if (!imageData || typeof imageData !== 'string') return false;
-  // Check if it's a valid data URL
+  // checks for valid URL
   const base64Regex = /^data:image\/(jpeg|jpg|png|gif|webp);base64,/;
   if (base64Regex.test(imageData)) return true;
-  // Check if it's raw base64 data (basic check)
+  // checks for valid base64
   const rawBase64Regex = /^[A-Za-z0-9+/]*={0,2}$/;
   return rawBase64Regex.test(imageData) && imageData.length > 100;
 };

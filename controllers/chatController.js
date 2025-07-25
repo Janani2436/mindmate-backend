@@ -1,3 +1,4 @@
+// MindMate backend - chatController.js
 import dotenv from 'dotenv';
 dotenv.config();
 
@@ -6,7 +7,7 @@ import { detectEmotion } from '../utils/emotionDetector.js';
 import { translateText } from '../utils/translate.js';
 import ChatMessage from '../models/ChatMessage.js';
 
-// Languages supported for translation/ML
+// translational languages
 const validLanguages = ['en', 'ta', 'hi', 'es', 'fr', 'de', 'te', 'zh', 'ar'];
 
 export const chat = async (req, res) => {
@@ -18,17 +19,17 @@ export const chat = async (req, res) => {
   try {
     const targetLang = validLanguages.includes(language) ? language : 'en';
 
-    // Translate input if needed
+    // english translation is done if neede
     let englishMessage = message;
     if (targetLang !== 'en') {
       try {
         englishMessage = await translateText(message, targetLang, 'en');
       } catch {
-        /* Use original if translation fails */
+        
       }
     }
 
-    // Emotion for AI prompt
+    // prompt given to AI
     const emotion = detectEmotion(englishMessage);
     const emotionPromptMap = {
       sad: 'Respond with empathy and reassurance.',
@@ -41,7 +42,7 @@ export const chat = async (req, res) => {
     const emotionPrompt = emotionPromptMap[emotion] || emotionPromptMap.default;
     const systemPrompt = `You are an empathetic AI therapist. ${emotionPrompt}`;
 
-    // Call OpenRouter AI
+    // Operouter API is called
     const response = await axios.post(
       'https://openrouter.ai/api/v1/chat/completions',
       {
@@ -63,7 +64,7 @@ export const chat = async (req, res) => {
     if (!aiEnglishReply)
       return res.status(500).json({ message: 'AI did not return a valid response.' });
 
-    // Translate AI reply if needed
+    
     let finalReply = aiEnglishReply;
     if (targetLang !== 'en') {
       try {
@@ -73,7 +74,7 @@ export const chat = async (req, res) => {
       }
     }
 
-    // Save conversation
+    // conversation is saved
     if (req.user?._id) {
       await ChatMessage.create({
         user: req.user._id,

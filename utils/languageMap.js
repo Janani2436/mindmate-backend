@@ -1,7 +1,4 @@
-/**
- * Bidirectional language map for name/code lookups
- */
-
+// MindMate backend - languageMap.js
 export const languageMap = {
   English: 'en',
   Tamil: 'ta',
@@ -13,12 +10,10 @@ export const languageMap = {
   Chinese: 'zh',
   Japanese: 'ja',
   Telugu: 'te',
-  // Add new languages here...
+  // additional languages can be added
 };
 
-/**
- * Reverse map for fast lookups from ISO code to display name
- */
+ // fast lookups
 export const codeToLanguageMap = Object.entries(languageMap).reduce(
   (acc, [name, code]) => {
     acc[code] = name;
@@ -28,17 +23,17 @@ export const codeToLanguageMap = Object.entries(languageMap).reduce(
 );
 
 /**
- * Get ISO 639-1 language code from human-readable name
- * @param {string} languageName - e.g. "Spanish"
- * @returns {string} code - e.g. "es"
+ * language code from name
+ * @param {string} languageName language name
+ * @returns {string} language code
  */
 export const getLanguageCode = (languageName = '') =>
   languageMap[languageName.trim()] || 'en';
 
 /**
- * Get human-readable language name from code
- * @param {string} languageCode - e.g. "es"
- * @returns {string} name - e.g. "Spanish"
+ * language name from code
+ * @param {string} languageCode language code
+ * @returns {string} language name
  */
 export const getLanguageName = (languageCode = 'en') =>
   codeToLanguageMap[languageCode.trim()] || 'English';

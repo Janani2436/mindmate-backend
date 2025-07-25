@@ -1,3 +1,4 @@
+// MindMate backend - authController.js
 import User from '../models/User.js';
 import jwt from 'jsonwebtoken';
 import dotenv from 'dotenv';
@@ -22,7 +23,7 @@ export const register = async (req, res) => {
       return res.status(400).json({ message: 'Username already taken' });
     }
 
-    // Do NOT hash password here, let pre-save hook handle it!
+  
     const newUser = new User({ username, password });
     await newUser.save();
 

@@ -1,4 +1,4 @@
-// config/db.js
+// MindMate backend - db.js
 import mongoose from 'mongoose';
 
 const connectDB = async () => {

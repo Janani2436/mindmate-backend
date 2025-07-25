@@ -1,3 +1,4 @@
+// MindMate backend - moodController.js
 import Mood from '../models/Mood.js';
 
 export const addMood = async (req, res) => {

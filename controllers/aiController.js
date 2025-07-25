@@ -1,3 +1,4 @@
+// MindMate backend - aiController.js
 import axios from 'axios';
 import { translateText, detectLanguage } from '../utils/translate.js';
 import dotenv from 'dotenv';

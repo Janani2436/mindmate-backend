@@ -1,4 +1,4 @@
-// routes/authRoutes.js
+// MindMate backend - authRoutes.js
 import express from 'express';
 import jwt from 'jsonwebtoken';
 import User from '../models/User.js';
@@ -13,7 +13,7 @@ const generateToken = (user) => {
   });
 };
 
-// Register
+// user registration
 router.post('/register', async (req, res) => {
   const { username, password } = req.body;
   console.log('🟢 Register attempt:', username);
@@ -47,7 +47,7 @@ router.post('/register', async (req, res) => {
   }
 });
 
-// Login
+// user LogIn
 router.post('/login', async (req, res) => {
   const { username, password } = req.body;
 

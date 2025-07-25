@@ -1,4 +1,4 @@
-// index.js
+//MindMate backend - index.js
 import dotenv from 'dotenv';
 dotenv.config();
 
@@ -17,10 +17,10 @@ import aiRoutes from './routes/aiRoutes.js';
 const app = express();
 const PORT = process.env.PORT || 5000;
 
-// Connect to MongoDB
+// MongoDB connection
 connectDB();
 
-// Middleware setup
+// setup middleware
 app.use(express.json());
 app.use(
   cors({
@@ -35,7 +35,7 @@ app.use(
   })
 );
 
-// API Routes
+// routing APTs
 app.use('/api/ai', aiRoutes);
 app.use('/api/mood', moodRoutes);
 app.use('/api/auth', authRoutes);
@@ -43,17 +43,17 @@ app.use('/api/chat', chatRoutes);
 app.use('/api/videochat', videoChatRoutes);
 app.use('/api/emotion', emotionRoutes);
 
-// Health check route
+// to check if server is running
 app.get('/', (req, res) => {
   res.send('✅ MindMate backend is running!');
 });
 
-// 404 fallback (keep after all routes)
+// 404 error handling
 app.use('*', (req, res) => {
   res.status(404).json({ message: '❌ Route not found' });
 });
 
-// Error handler
+
 app.use((err, req, res, next) => {
   console.error('❗ Server Error:', err.stack);
   res.status(err.status || 500).json({

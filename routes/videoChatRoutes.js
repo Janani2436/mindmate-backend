@@ -1,3 +1,4 @@
+// MindMate backend - videoChatRoues.js
 import express from 'express';
 import { processVideoFrame, getVideoChatHistory, getEmotionAnalytics } from '../controllers/videoChatController.js';
 import { protect } from '../middleware/authMiddleware.js';

@@ -1,3 +1,4 @@
+// MindMate backend - moodRoutes.js
 import express from 'express';
 import Mood from '../models/Mood.js';
 import { protect } from '../middleware/authMiddleware.js';

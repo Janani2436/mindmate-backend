@@ -4,11 +4,11 @@ import axios from 'axios';
 const LIBRE_TRANSLATE_URL = 'https://translate.argosopentech.com';
 
 /**
- * Translate text from one language to another using LibreTranslate API
- * @param {string} text - Text to translate (e.g. 'Hello')
- * @param {string} sourceLang - ISO 639-1 code of source language (e.g. 'hi')
- * @param {string} targetLang - ISO 639-1 code of target language (e.g. 'en')
- * @returns {Promise<string>} Translated text or original on error
+ * translate text to target language
+ * @param {string} text test to translate
+ * @param {string} sourceLang language code of source language
+ * @param {string} targetLang code of target language
+ * @returns {Promise<string>} translated text
  */
 export const translateText = async (text, sourceLang, targetLang) => {
   try {
@@ -46,15 +46,15 @@ export const translateText = async (text, sourceLang, targetLang) => {
     return translated.trim();
   } catch (err) {
     console.error('🔴 [TranslateText Error]:', err.message || err);
-    // Graceful fallback: return original text
+    // original text is returned if translation is failed
     return text;
   }
 };
 
 /**
- * Detect language of a given input string using LibreTranslate
- * @param {string} text - String to analyze (e.g., 'Hola mundo')
- * @returns {Promise<string>} Detected ISO 639-1 code (default: 'en')
+ * detects language 
+ * @param {string} text string is analyzed
+ * @returns {Promise<string>} detects language code
  */
 export const detectLanguage = async (text) => {
   try {
@@ -79,6 +79,6 @@ export const detectLanguage = async (text) => {
     return detectedLang || 'en';
   } catch (err) {
     console.error('🔴 [LanguageDetection Error]:', err.message || err);
-    return 'en'; // Fallback ⛑
+    return 'en'; // returns to english 
   }
 };

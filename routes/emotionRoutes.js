@@ -1,3 +1,4 @@
+// MindMate backend - emotionRoutes.js
 import express from 'express';
 import multer from 'multer';
 import axios from 'axios';
@@ -6,18 +7,18 @@ dotenv.config();
 
 const router = express.Router();
 
-// Multer setup for image upload (in memory)
+
 const storage = multer.memoryStorage();
 const upload = multer({ storage });
 
-// Face++ API endpoint
+
 const FACEPP_URL = 'https://api-us.faceplusplus.com/facepp/v3/detect';
 
 router.post('/analyze', upload.single('image'), async (req, res) => {
   try {
     const imageBuffer = req.file.buffer;
 
-    // Convert image buffer to base64
+    
     const imageBase64 = imageBuffer.toString('base64');
 
     const params = new URLSearchParams();
@@ -34,7 +35,7 @@ router.post('/analyze', upload.single('image'), async (req, res) => {
       return res.status(400).json({ success: false, message: 'No face detected' });
     }
 
-    // Find the dominant emotion
+    
     const dominantEmotion = Object.entries(emotions).reduce((max, curr) =>
       curr[1] > max[1] ? curr : max
     )[0];

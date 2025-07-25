@@ -1,3 +1,4 @@
+// MindMate backend - mood.js
 import mongoose from 'mongoose';
 
 const moodSchema = new mongoose.Schema({
@@ -6,7 +7,7 @@ const moodSchema = new mongoose.Schema({
   user: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User',
-    required: true, // ✅ Needed for streak & personal mood data
+    required: true, // datas are collected from user
   },
 }, { timestamps: true });
 

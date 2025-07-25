@@ -1,3 +1,4 @@
+// MindMate backend - videoChatController.js
 import dotenv from 'dotenv';
 dotenv.config();
 
@@ -6,12 +7,10 @@ import { processFrame, validateImageData, extractBase64Data } from '../utils/emo
 import { translateText } from '../utils/translate.js';
 import ChatMessage from '../models/ChatMessage.js';
 
-// Supported languages
+// languages used
 const validLanguages = ['en', 'ta', 'hi', 'es', 'fr', 'de', 'te', 'zh', 'ar'];
 
-/**
- * 📹 Process video frame and generate AI response based on detected emotion
- */
+
 const processVideoFrame = async (req, res) => {
   console.log("📹 Incoming video chat request");
   console.log("🌐 Language:", req.body?.language);
@@ -19,7 +18,7 @@ const processVideoFrame = async (req, res) => {
 
   const { imageData, message = '', language = 'en' } = req.body;
 
-  // 🔍 Validate required fields
+  // validation of input
   if (!imageData) {
     return res.status(400).json({
       success: false,
@@ -38,15 +37,15 @@ const processVideoFrame = async (req, res) => {
     const targetLang = validLanguages.includes(language) ? language : 'en';
     const base64Data = extractBase64Data(imageData);
 
-    // 🎭 Step 1: Detect emotion
+    // detects emotion
     console.log("🎭 Processing video frame for emotion detection...");
     const detectedEmotion = await processFrame(base64Data);
     console.log("✅ Detected emotion:", detectedEmotion);
 
-    // Step 2: Prepare context message
+    // prepaes message
     let contextMessage = message.trim() || "I'm sharing my video with you. How are you feeling about my current state?";
 
-    // Step 3: Translate user message to English (for AI)
+    // user input is translated to english
     let englishMessage = contextMessage;
     if (targetLang !== 'en') {
       try {
@@ -56,7 +55,7 @@ const processVideoFrame = async (req, res) => {
       }
     }
 
-    // Step 4: Build system prompt using emotion map
+    // promots based on emotions
     const emotionPromptMap = {
       happy: "The user appears to be happy and joyful. Celebrate their positive mood and encourage them to maintain this wonderful state. Offer suggestions for sustaining happiness.",
       sad: "The user seems to be feeling sad or down. Respond with extra empathy, care, and gentle support. Offer comforting words and practical coping strategies.",
@@ -84,7 +83,7 @@ Respond in a warm, understanding manner. Keep your response concise but meaningf
 Be culturally sensitive and avoid clinical language. Speak as a caring friend who understands emotions.
 `;
 
-    // Step 5: AI request to OpenRouter
+    // request to AI
     const model = process.env.OPENROUTER_MODEL || 'mistralai/mistral-7b-instruct:free';
     const apiKey = process.env.OPENROUTER_API_KEY;
 
@@ -125,7 +124,7 @@ Be culturally sensitive and avoid clinical language. Speak as a caring friend wh
       });
     }
 
-    // Step 6: Translate back to user's language (if needed)
+    // generated output is translted to user's language
     let finalReply = aiEnglishReply;
     if (targetLang !== 'en') {
       try {
@@ -135,7 +134,7 @@ Be culturally sensitive and avoid clinical language. Speak as a caring friend wh
       }
     }
 
-    // Step 7: Save video chat to MongoDB
+    // video chat is saved to mongoDB
     if (req.user?._id) {
       try {
         await ChatMessage.create({
@@ -162,7 +161,7 @@ Be culturally sensitive and avoid clinical language. Speak as a caring friend wh
       }
     }
 
-    // Step 8: Send final response
+    // sending of final response
     res.json({
       success: true,
       reply: finalReply,
@@ -186,9 +185,7 @@ Be culturally sensitive and avoid clinical language. Speak as a caring friend wh
   }
 };
 
-/**
- * 📦 Get video chat history for authenticated user
- */
+
 const getVideoChatHistory = async (req, res) => {
   try {
     if (!req.user?._id) {
@@ -213,7 +210,7 @@ const getVideoChatHistory = async (req, res) => {
       })),
     }));
 
-    // 📊 Emotion analytics
+    // emotions are analysed
     const emotionStats = {};
     chatHistory.forEach((chat) => {
       chat.messages.forEach((msg) => {
@@ -238,9 +235,7 @@ const getVideoChatHistory = async (req, res) => {
   }
 };
 
-/**
- * 📈 Get emotion analytics from past N days
- */
+
 const getEmotionAnalytics = async (req, res) => {
   try {
     if (!req.user?._id) {
