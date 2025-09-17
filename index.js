@@ -60,38 +60,6 @@ app.get('/', (req, res) => {
   res.send('✅ MindMate backend is running!');
 });
 
-// Enhanced /routes-list endpoint to list all routes including nested routers
-app.get('/routes-list', (req, res) => {
-  const getRoutes = (stack, prefix = '') =>
-    stack
-      .filter(layer => layer.route || layer.name === 'router')
-      .flatMap(layer => {
-        if (layer.route) {
-          return [prefix + layer.route.path];
-        } else if (layer.name === 'router' && layer.handle && layer.handle.stack) {
-          // Extract path from regex source, preserving slashes
-          const regexStr = layer.regexp.source
-            // Remove regex start/end markers and flags
-            .replace('^\\/', '/')
-            .replace('\\/?(?=\\/|$)', '')
-            .replace(/\\\^|\$|\\\/\?\(\?:\(\[\^\\\/]+\?\)\)/g, '')
-            .replace(/\\\//g, '/');
-
-          const newPrefix = prefix.endsWith('/') ? prefix.slice(0, -1) : prefix;
-
-          // Compose with slash safely
-          const path = newPrefix + (regexStr.startsWith('/') ? regexStr : '/' + regexStr);
-
-          return getRoutes(layer.handle.stack, path);
-        }
-        return [];
-      });
-  const allRoutes = getRoutes(app._router.stack);
-  res.json(allRoutes);
-});
-
-
-
 // 404 error handling
 app.use('*', (req, res) => {
   res.status(404).json({ message: '❌ Route not found' });
